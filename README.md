@@ -2,7 +2,7 @@
 
 Binary Ninja plugin that rebuilds a plausible source tree from the `__FILE__`
 path strings passed to a logging or assert function. Spiritual sibling of
-the [logrn](https://github.com/catnip/logrn) binaryninja plugin: logrn gives functions their names,
+the [logrn](https://github.com/sum-catnip/logrn) binaryninja plugin: logrn gives functions their names,
 arborist gives them their place.
 
 ## Usage
