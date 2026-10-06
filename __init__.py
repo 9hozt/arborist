@@ -22,6 +22,13 @@ except Exception:
 # strips a leading windows drive letter like "C:"
 _DRIVE = re.compile(r'^[A-Za-z]:')
 
+# only treat a leaked string as a source path if it ends in one of these.
+# Tunable; keeps random strings passed to the log function from creating junk
+# directories, and narrows what the plugin will ever write to disk.
+_SRC_EXT = ('.c', '.cc', '.cpp', '.cxx', '.c++',
+            '.h', '.hh', '.hpp', '.hxx', '.inl',
+            '.s', '.asm', '.m', '.mm')
+
 # last output directory used this session, offered as default next time
 _last_outdir = ''
 
@@ -54,11 +61,25 @@ def iscall(i: MediumLevelILInstruction):
 def split_path(raw: str) -> list[str]:
     """Normalise a raw __FILE__ string into safe path components.
 
-    Handles both '/' and '\\' separators, drops drive letters, '.', '..' and
-    empty segments so the result can never escape the chosen output root.
+    The string comes from the binary and is therefore untrusted. Handles both
+    '/' and '\\' separators, drops drive letters, '.', '..' and empty segments
+    so the result can never climb above the chosen output root. Rejects strings
+    with control characters, and keeps only things that look like source files.
+    Returns [] when the string should be ignored.
     """
-    p = _DRIVE.sub('', raw.strip().replace('\\', '/'), count=1)
-    return [x for x in p.split('/') if x not in ('', '.', '..')]
+    raw = raw.strip()
+    # reject control chars / null bytes (both a traversal-noise and a crash risk
+    # for open()); real source paths never contain them
+    if any(ord(ch) < 0x20 for ch in raw):
+        return []
+    p = _DRIVE.sub('', raw.replace('\\', '/'), count=1)
+    parts = [x for x in p.split('/') if x not in ('', '.', '..')]
+    if not parts:
+        return []
+    # must look like a source file, not an arbitrary string the logger was fed
+    if not parts[-1].lower().endswith(_SRC_EXT):
+        return []
+    return parts
 
 
 def extract_path(callee: Function, caller: Function, parami: int):
@@ -204,6 +225,7 @@ class TreeTask(BackgroundTaskThread):
 
         # additive: never truncate, never write the same function twice.
         written = load_written(outdir)
+        root_real = os.path.realpath(outdir)
         new_files = new_funcs = 0
         done = 0
         nkeys = len(tree)
@@ -214,6 +236,16 @@ class TreeTask(BackgroundTaskThread):
             self.progress = f'arborist: writing {done}/{nkeys} files'
             done += 1
             dest = os.path.join(outdir, *key.split('/'))
+            # defense in depth: resolve symlinks and confirm the target really
+            # lands under the chosen root before touching the filesystem, so a
+            # crafted path (or a symlink already in outdir) can't escape it
+            try:
+                dest_real = os.path.realpath(dest)
+                if os.path.commonpath([root_real, dest_real]) != root_real:
+                    raise ValueError
+            except ValueError:
+                log_warn(f'arborist: skipping path outside output dir: {key}')
+                continue
             if not os.path.exists(dest):
                 new_files += 1
             os.makedirs(os.path.dirname(dest), exist_ok=True)

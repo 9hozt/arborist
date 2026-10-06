@@ -44,6 +44,22 @@ final log line reports how many *new* files and functions were written. Delete
 - Pseudo C needs a Binary Ninja recent enough to expose the linear "Pseudo C"
   representation, otherwise it silently falls back to HLIL.
 
+## Path safety
+
+The paths come from the binary and are untrusted — a hostile sample could ship
+crafted `__FILE__` strings. arborist defends on three fronts before writing:
+
+- `.`, `..`, leading slashes and drive letters are stripped, so a path can
+  never climb above the chosen output directory.
+- Only strings ending in a known source extension (`.c`, `.cpp`, `.h`, …, see
+  `_SRC_EXT`) are treated as paths; anything else the logger was fed is ignored.
+- Each resolved target is checked (via `realpath`) to be inside the output
+  directory before any write, catching symlinks or edge cases the first two
+  miss.
+
+Still, point it at a throwaway output directory when analysing untrusted
+binaries — never your home or a sensitive tree.
+
 ## Roadmap
 
 - Export format choice: HLIL (`.hlil`) and disassembly (`.asm`).
