@@ -1,0 +1,16 @@
+{
+  "pluginmetadataversion": 2,
+  "name": "arborist",
+  "author": "ghozt",
+  "type": ["helper"],
+  "api": ["python3"],
+  "description": "reconstruct a plausible source tree from file paths embedded in logging/assert functions",
+  "longdescription": "# arborist\n\nBinary Ninja plugin that rebuilds a plausible source tree from the `__FILE__` path strings passed to a logging or assert function.\n\nRight-click a logging function that receives a source path argument, run `export caller tree`, pick which argument holds the path, then choose a mode: **tree only** (empty files) or **tree + Pseudo C** (files filled with decompiled code, falling back to HLIL if Pseudo C is unavailable). Every caller is placed by the path it passes.\n\nAttribution uses the first matching direct call per caller (same compromise as logrn). Callers without a usable path are skipped. Re-runs into the same directory are additive and de-duplicated. The written Pseudo C is decompiler output, not compilable source.",
+  "license": {
+    "name": "MIT",
+    "text": "Copyright (c) 2026 ghozt\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE."
+  },
+  "platforms": ["Darwin", "Windows", "Linux"],
+  "version": "0.1.0",
+  "minimumbinaryninjaversion": 2263
+}
